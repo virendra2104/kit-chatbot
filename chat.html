@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>KIT Chatbot</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    margin: 0;
+    padding: 0;
+  }
+
+  .chatbot-icon {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: #4f46e5;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    z-index: 1000;
+  }
+
+  .chat-container {
+    position: fixed;
+    bottom: 90px;
+    right: 20px;
+    width: 360px;
+    height: 500px;
+    background: white;
+    border-radius: 12px;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    z-index: 1000;
+  }
+
+  .chat-header {
+    background: #4f46e5;
+    color: white;
+    padding: 12px;
+    font-weight: bold;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .close-btn {
+    cursor: pointer;
+    font-size: 18px;
+  }
+
+  .chat-body {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    background: #fafafa;
+  }
+
+  .message {
+    margin-bottom: 10px;
+    max-width: 70%;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+  }
+
+  .user {
+    background: #4f46e5;
+    color: white;
+    margin-left: auto;
+    max-width: 70%;             /* prevent very long lines */
+    width: fit-content;  
+  }
+
+  .bot {
+    background: #e5e7eb;
+    color: black;
+    margin-right: auto;
+    max-width: 70%;             /* prevent very long lines */
+    width: fit-content;  
+  }
+
+  .chat-footer {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+  }
+
+  .chat-footer input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+    outline: none;
+  }
+
+  .chat-footer button {
+    margin-left: 8px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 20px;
+    background: #4f46e5;
+    color: white;
+    cursor: pointer;
+  }
+
+  .chat-footer button:hover {
+    background: #4338ca;
+  }
+</style>
+</head>
+
+<body>
+
+<!-- Chat Window -->
+<div class="chat-container" id="chatContainer">
+  <div class="chat-header">
+    🎓 KIT Chatbot
+    <span class="close-btn" onclick="toggleChat()">✖</span>
+  </div>
+
+  <div class="chat-body" id="chatBody"></div>
+
+  <div class="chat-footer">
+    <input id="userInput" placeholder="Type a message..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
+
+<!-- Floating Button -->
+<div class="chatbot-icon" onclick="toggleChat()">🤖</div>
+
+<!-- 🔥 GRADIO CLIENT -->
+<script type="module">
+import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
+
+const client = await Client.connect("satish1292/mistral-chatbot");
+let history = [];
+
+const chatContainer = document.getElementById("chatContainer");
+const chatBody = document.getElementById("chatBody");
+const input = document.getElementById("userInput");
+
+function toggleChat() {
+  chatContainer.style.display =
+    chatContainer.style.display === "flex" ? "none" : "flex";
+}
+window.toggleChat = toggleChat;
+
+input.addEventListener("keypress", e => {
+  if (e.key === "Enter") sendMessage();
+});
+
+async function sendMessage() {
+  const message = input.value.trim();
+  if (!message) return;
+
+  addMessage(message, "user");
+  input.value = "";
+
+  try {
+    const result = await client.predict("/predict", [
+      message,
+      history
+    ]);
+
+    const reply = result.data[0];
+    history = result.data[1];
+
+    addMessage(reply, "bot");
+  } catch (e) {
+    addMessage("❌ Server error. Try again.", "bot");
+    console.error(e);
+  }
+}
+window.sendMessage = sendMessage;
+
+function addMessage(text, sender) {
+  const msg = document.createElement("div");
+  msg.className = `message ${sender}`;
+  msg.textContent = text;
+  chatBody.appendChild(msg);
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+</script>
+
+</body>
+</html>
